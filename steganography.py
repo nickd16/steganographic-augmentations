@@ -63,7 +63,7 @@ def dct_embed(cover, secret, num_bits):
     embedded = torch.fft.irfft2(cover_dct, s=cover.shape[-2:], norm='ortho')
     return torch.clamp(embedded / 255.0, 0.0, 1.0)
 
-def save_lsb_steganography_plot(cover_path, secret_path, save_path, num_bits=2):
+def save_lsb_steganography_plot(cover_path, secret_path, save_path, num_bits=6):
     cover_img = np.array(Image.open(cover_path).convert('RGB').resize((224, 224)))
     secret_img = np.array(Image.open(secret_path).convert('RGB').resize((224, 224)))
     

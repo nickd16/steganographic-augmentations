@@ -4,6 +4,8 @@ from torchmetrics import Accuracy
 import torch.nn.functional as F
 import torchvision
 import torch
+import timm
+from transformers import ViTForImageClassification, ViTConfig
 
 class Flatten(nn.Module):
     def forward(self, x):
@@ -69,6 +71,23 @@ class RESNET18(nn.Module):
     def forward(self, x):
         return self.model(x)
 
+class ViT(nn.Module):
+    def __init__(self, output_dim, img_size):
+        super().__init__()
+        config = ViTConfig(
+            image_size=img_size,
+            patch_size=4,
+            num_labels=output_dim,
+            hidden_size=192, 
+            num_hidden_layers=8,  
+            num_attention_heads=3, 
+            intermediate_size=384,  
+        )
+        self.model = ViTForImageClassification(config)
+        
+    def forward(self, x):
+        return self.model(x).logits 
+
 class plmodel(pl.LightningModule):
     def __init__(self, model, num_classes, lr, num_epochs):
         super().__init__()
@@ -126,16 +145,9 @@ class plmodel(pl.LightningModule):
         return optimizer
 
 def main():
-    def print_shape_hook(module, input, output):
-        print(f"Shape after {module}: {output.shape}")
-
-
-    x = torch.randn((64, 3, 64,64)).cuda()
-    model = make_net(output_dim=200).cuda()
-    for layer in model:
-        if isinstance(layer, nn.AdaptiveAvgPool2d) or isinstance(layer, nn.MaxPool2d):
-            layer.register_forward_hook(print_shape_hook)
-    print(model(x).shape)
+    model = ViT(10).cuda()
+    x = torch.randn((64, 3, 32, 32)).cuda()
+    print(model(x)[0].shape)
 
 if __name__ == '__main__':
     main()

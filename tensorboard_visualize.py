@@ -18,6 +18,13 @@ def generate_distinct_colors(n):
     return colors
 
 
+def adjust_colors_for_two(colors):
+    if len(colors) == 2:
+        colors[0] = (1.0, 0.0, 0.0)
+        colors[1] = (0.0, 0.0, 0.5)
+    return colors
+
+
 def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=True):
     all_experiments = {}
     total_versions = 0
@@ -43,6 +50,7 @@ def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=Tr
         return
 
     colors = generate_distinct_colors(len(experiment_names))
+    colors = adjust_colors_for_two(colors)
     handles, labels = [], []
 
     individual_plot_path = Path(output_dir) / "individual_metrics.png"
@@ -73,9 +81,11 @@ def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=Tr
         handles.append(plt.Line2D([], [], color=color))
         labels.append(experiment_name)
 
-    plt.title("Individual Experiment Metrics")
-    plt.xlabel("Step")
-    plt.ylabel("Value")
+    plt.title("Individual Experiment Metrics", weight="bold", fontsize=16)
+    plt.xlabel("Step", weight="bold", fontsize=14)
+    plt.ylabel("Value", weight="bold", fontsize=14)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     plt.legend(handles, labels)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -107,9 +117,11 @@ def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=Tr
         if show_std:
             plt.fill_between(steps, mean_values - std_values, mean_values + std_values, alpha=0.2, color=color)
 
-    plt.title("Mean Experiment Metrics")
-    plt.xlabel("Step")
-    plt.ylabel("Mean Value")
+    plt.title("Mean Experiment Metrics", weight="bold", fontsize=16)
+    plt.xlabel("Step", weight="bold", fontsize=14)
+    plt.ylabel("Mean Value", weight="bold", fontsize=14)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -120,9 +132,9 @@ def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=Tr
 
 
 def main():
-    experiments = ["cifar10_d_resnet18", "cifar10_s_resnet18"] 
-    base_path = "experiment_logs"  
-    output_dir = "plots" 
+    experiments = ["cifar10_d_resnet18", "cifar10_s_resnet18"]
+    base_path = "experiment_logs"
+    output_dir = "plots"
 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     plot_experiment_metrics(experiments, base_path, output_dir, show_std=False)

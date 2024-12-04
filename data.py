@@ -7,12 +7,13 @@ import time
 from steganography import *
 from datasets import load_dataset
 
-class CIFAR10WithOneHot(Dataset):
-    def __init__(self, dataset, embed_prob, num_bits, steg):
+class ConvertOneHot(Dataset):
+    def __init__(self, dataset, embed_prob, num_bits, steg, num_classes):
         self.dataset = dataset
         self.embed_prob = embed_prob
         self.num_bits = num_bits
         self.steg = steg
+        self.num_classes = num_classes
 
     def __getitem__(self, index):
         data, label = self.dataset[index]
@@ -21,12 +22,12 @@ class CIFAR10WithOneHot(Dataset):
             secret_idx = random.randint(0, len(self.dataset) - 1)
             secret_data, secret_label = self.dataset[secret_idx]
             embedded_data = lsb_embed(data, secret_data, self.num_bits)
-            one_hot = torch.zeros(10)
+            one_hot = torch.zeros(self.num_classes)
             one_hot[label] = 1
             one_hot[secret_label] = 1
             return embedded_data, one_hot
         
-        one_hot = torch.zeros(10)
+        one_hot = torch.zeros(self.num_classes)
         one_hot[label] = 1
         return data, one_hot
         
@@ -41,6 +42,7 @@ def process_data_cifar10(
         embed_prob, 
         steg,
         num_bits,
+        num_classes,
     ):
 
     transform = transforms.Compose([
@@ -68,9 +70,9 @@ def process_data_cifar10(
     generator = torch.Generator().manual_seed(seed)
     trainset, valset = random_split(trainset, [train_size, val_size], generator)
     
-    trainset = CIFAR10WithOneHot(trainset, embed_prob=embed_prob, steg=steg, num_bits=num_bits)
-    valset = CIFAR10WithOneHot(valset, embed_prob=0, steg=False, num_bits=0)
-    testset = CIFAR10WithOneHot(testset, embed_prob=0, steg=False, num_bits=0)
+    trainset = ConvertOneHot(trainset, embed_prob=embed_prob, steg=steg, num_bits=num_bits, num_classes=num_classes)
+    valset = ConvertOneHot(valset, embed_prob=0, steg=False, num_bits=0, num_classes=num_classes)
+    testset = ConvertOneHot(testset, embed_prob=0, steg=False, num_bits=0, num_classes=num_classes)
     
     trainloader = DataLoader(
         trainset,
@@ -94,32 +96,6 @@ def process_data_cifar10(
     )
     
     return trainloader, valloader, testloader
-
-class TinyImagenetWithOneHot(Dataset):
-    def __init__(self, dataset, embed_prob, num_bits, steg):
-        self.dataset = dataset
-        self.embed_prob = embed_prob
-        self.num_bits = num_bits
-        self.steg = steg
-
-    def __getitem__(self, index):
-        data, label = self.dataset[index]
-        
-        if self.steg and random.random() < self.embed_prob:
-            secret_idx = random.randint(0, len(self.dataset) - 1)
-            secret_data, secret_label = self.dataset[secret_idx]
-            embedded_data = lsb_embed(data, secret_data, self.num_bits)
-            one_hot = torch.zeros(200)
-            one_hot[label] = 1
-            one_hot[secret_label] = 1
-            return embedded_data, one_hot
-        
-        one_hot = torch.zeros(200)
-        one_hot[label] = 1
-        return data, one_hot
-        
-    def __len__(self):
-        return len(self.dataset)
 
 class TinyImagenetBase(Dataset):
     def __init__(self, split, transform):
@@ -161,6 +137,7 @@ def process_data_tinyimagenet(
         steg,
         num_bits,
         download,
+        num_classes,
 ):
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -170,8 +147,8 @@ def process_data_tinyimagenet(
     trainset = TinyImagenetBase(split='train', transform = transform)
     testset = TinyImagenetBase(split='valid', transform = transform)      
     
-    trainset = TinyImagenetWithOneHot(trainset, embed_prob=embed_prob, steg=steg, num_bits=num_bits)
-    testset = TinyImagenetWithOneHot(testset, embed_prob=0, steg=False, num_bits=0)
+    trainset = ConvertOneHot(trainset, embed_prob=embed_prob, steg=steg, num_bits=num_bits, num_classes=num_classes)
+    testset = ConvertOneHot(testset, embed_prob=0, steg=False, num_bits=0, num_classes=num_classes)
     
     trainloader = DataLoader(
         trainset,
@@ -189,32 +166,6 @@ def process_data_tinyimagenet(
     
     return trainloader, testloader, testloader
 
-class STL10WithOneHot(Dataset):
-    def __init__(self, dataset, embed_prob, num_bits, steg):
-        self.dataset = dataset
-        self.embed_prob = embed_prob
-        self.num_bits = num_bits
-        self.steg = steg
-
-    def __getitem__(self, index):
-        data, label = self.dataset[index]
-        
-        if self.steg and random.random() < self.embed_prob:
-            secret_idx = random.randint(0, len(self.dataset) - 1)
-            secret_data, secret_label = self.dataset[secret_idx]
-            embedded_data = lsb_embed(data, secret_data, self.num_bits)
-            one_hot = torch.zeros(10)
-            one_hot[label] = 1
-            one_hot[secret_label] = 1
-            return embedded_data, one_hot
-        
-        one_hot = torch.zeros(10)
-        one_hot[label] = 1
-        return data, one_hot
-        
-    def __len__(self):
-        return len(self.dataset)
-
 def process_data_stl10(
         batch_size, 
         seed, 
@@ -223,6 +174,7 @@ def process_data_stl10(
         embed_prob, 
         steg,
         num_bits,
+        num_classes,
     ):
 
     transform = transforms.Compose([
@@ -234,7 +186,7 @@ def process_data_stl10(
         root='./data', 
         split='train',
         download=download,
-        transform=transform
+        transform=transform,
     )
     
     testset = torchvision.datasets.STL10(
@@ -250,9 +202,9 @@ def process_data_stl10(
     generator = torch.Generator().manual_seed(seed)
     trainset, valset = random_split(trainset, [train_size, val_size], generator)
     
-    trainset = STL10WithOneHot(trainset, embed_prob=embed_prob, steg=steg, num_bits=num_bits)
-    valset = STL10WithOneHot(valset, embed_prob=0, steg=False, num_bits=0)
-    testset = STL10WithOneHot(testset, embed_prob=0, steg=False, num_bits=0)
+    trainset = ConvertOneHot(trainset, embed_prob=embed_prob, steg=steg, num_bits=num_bits, num_classes=num_classes)
+    valset = ConvertOneHot(valset, embed_prob=0, steg=False, num_bits=0, num_classes=num_classes)
+    testset = ConvertOneHot(testset, embed_prob=0, steg=False, num_bits=0, num_classes=num_classes)
     
     trainloader = DataLoader(
         trainset,
@@ -286,6 +238,7 @@ def process_data(
         num_bits,
         download,
         dataset,
+        num_classes,
     ):
 
     dataset_processors = {
@@ -304,7 +257,8 @@ def process_data(
         num_workers=num_workers,
         steg=steg,
         num_bits=num_bits,
-        embed_prob=embed_prob
+        embed_prob=embed_prob,
+        num_classes=num_classes
     )
 
 def main():

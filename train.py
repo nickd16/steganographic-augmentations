@@ -42,6 +42,7 @@ def train(
         num_bits=num_bits,
         embed_prob=embed_prob,
         dataset=dataset,
+        num_classes=num_classes
     )
     
     model = torch.compile(model)
@@ -74,17 +75,18 @@ def train(
 def main():
     lr = 2e-4
     num_classes=10
-    dataset = 'cifar10'
+    dataset = 'stl10'
     #model = make_net(output_dim=num_classes)
-    model = RESNET18(output_dim=num_classes)
+    #model = RESNET18(output_dim=num_classes)
+    model = ViT(output_dim=num_classes, img_size=96)
     num_epochs = 50
-    for _ in range(5):
+    for _ in range(4):
         train(
             lr=lr, 
             model=model, 
             num_classes=num_classes, 
             num_epochs=num_epochs, 
-            name='cifar10_d_resnet18', 
+            name='stl10_d_vit', 
             steg=False,
             dataset=dataset,
         )
@@ -94,7 +96,7 @@ def main():
             model=model, 
             num_classes=num_classes, 
             num_epochs=num_epochs, 
-            name='stl10_s_resnet18', 
+            name='stl_s_vit', 
             steg=True,
             dataset=dataset,
         )
