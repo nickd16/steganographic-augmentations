@@ -22,6 +22,7 @@ def train(
     num_classes: int,
     model = None,
     dataset = str,
+    transform = None,
     num_epochs: int=10,
     seed: int=random.randint(0, 2**32 - 1),
     num_workers: int=5,
@@ -42,7 +43,8 @@ def train(
         num_bits=num_bits,
         embed_prob=embed_prob,
         dataset=dataset,
-        num_classes=num_classes
+        num_classes=num_classes,
+        transform=transform
     )
     
     model = torch.compile(model)
@@ -75,33 +77,46 @@ def train(
 def main():
     lr = 2e-4
     num_classes=10
-    dataset = 'stl10'
-    #model = make_net(output_dim=num_classes)
-    #model = RESNET18(output_dim=num_classes)
-    model = ViT(output_dim=num_classes, img_size=96)
+    dataset = 'cifar10'
     num_epochs = 50
-    for _ in range(4):
-        train(
-            lr=lr, 
-            model=model, 
-            num_classes=num_classes, 
-            num_epochs=num_epochs, 
-            name='stl10_d_vit', 
-            steg=False,
-            dataset=dataset,
-        )
-    for _ in range(5):
-        train(
-            lr=lr, 
-            model=model, 
-            num_classes=num_classes, 
-            num_epochs=num_epochs, 
-            name='stl_s_vit', 
-            steg=True,
-            dataset=dataset,
-        )
-    
+    names = [
+        'cifar10_steg_hflips'
+    ]
+    transformz = [
+        # transforms.Compose([
+        #     transforms.ToTensor(),
+        #     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)
+        # ]),  
+        # transforms.Compose([
+        #     transforms.ToTensor(),
+        #     transforms.GaussianBlur(kernel_size=3)
+        # ]),
+        # transforms.Compose([
+        #     transforms.ToTensor(),
+        #     transforms.RandomHorizontalFlip(p=0.5)
+        # ]),  
+        # transforms.Compose([
+        #     transforms.ToTensor(),
+        #     transforms.RandomErasing(p=0.5)
+        # ]),  
+        transforms.Compose([
+            transforms.ToTensor(),
+            transforms.RandomHorizontalFlip(p=0.5)
+        ]),  
+    ]
 
+    for _ in range(50):
+        for name,trans in zip(names, transformz):
+            train(
+                lr=lr, 
+                model=make_net(output_dim=num_classes), 
+                num_classes=num_classes, 
+                num_epochs=num_epochs, 
+                name=name, 
+                steg=True,
+                transform=trans,
+                dataset=dataset,
+            )
 
 if __name__ == '__main__':
     main()

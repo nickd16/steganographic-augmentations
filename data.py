@@ -18,6 +18,7 @@ class ConvertOneHot(Dataset):
     def __getitem__(self, index):
         data, label = self.dataset[index]
         
+        self.num_bits = random.randint(1,7)
         if self.steg and random.random() < self.embed_prob:
             secret_idx = random.randint(0, len(self.dataset) - 1)
             secret_data, secret_label = self.dataset[secret_idx]
@@ -43,12 +44,17 @@ def process_data_cifar10(
         steg,
         num_bits,
         num_classes,
+        transform,
     ):
 
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.RandomHorizontalFlip(p=0.5)
-    ])
+    # if transform is None:
+    #     print("here")
+    #     transform = transforms.Compose([
+    #         transforms.ToTensor(),
+    #         #transforms.RandomHorizontalFlip(p=0.5)
+    #     ])
+    if transform is None:
+        sys.exit(1)
     
     trainset = torchvision.datasets.CIFAR10(
         root='./data', 
@@ -239,6 +245,7 @@ def process_data(
         download,
         dataset,
         num_classes,
+        transform,
     ):
 
     dataset_processors = {
@@ -258,7 +265,8 @@ def process_data(
         steg=steg,
         num_bits=num_bits,
         embed_prob=embed_prob,
-        num_classes=num_classes
+        num_classes=num_classes,
+        transform=transform
     )
 
 def main():
