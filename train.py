@@ -87,23 +87,17 @@ def main():
     num_classes=10
     dataset = 'cifar10'
     num_epochs = 50
+    training_runs = 100
     names = [
         'cifar10_steg',
-        'cifar10_steg_hflips'
     ]
     transformz = [
         transforms.Compose([
             transforms.ToTensor(),
-        ]),  
-    ]
-    transformz = [
-        transforms.Compose([
-            transforms.ToTensor(),
-            transforms.RandomHorizontalFlip(p=0.5)
         ]),  
     ]
 
-    for _ in range(50):
+    for _ in range(training_runs):
         for name,trans in zip(names, transformz):
             train(
                 lr=lr, 
