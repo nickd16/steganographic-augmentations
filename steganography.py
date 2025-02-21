@@ -10,6 +10,8 @@ import time
 import sys
 import matplotlib.pyplot as plt
 from PIL import Image
+from torch import Tensor
+from typing import Tuple
 
 def lsb_embed(cover, secret, num_bits):
     cover = (cover * 255).byte()
@@ -19,6 +21,19 @@ def lsb_embed(cover, secret, num_bits):
     secret_shifted = secret >> (8 - num_bits)
     embedded = cover_cleared | secret_shifted
     return embedded.float() / 255.0
+
+class LSBEmbed:
+    def __init__(self, num_bits):
+        self.num_bits = num_bits
+    
+    def __call__(self, data):
+        if not isinstance(data, tuple) or len(data) != 2:
+            raise ValueError("Input must be a tuple of (cover_image, secret_image)")
+        cover, secret = data
+        return lsb_embed(cover, secret, self.num_bits)
+    
+    def __repr__(self):
+        return f"{self.__class__.__name__}(num_bits={self.num_bits})"
 
 def palette_embed(cover, secret, num_bits):
     palette_size = 256

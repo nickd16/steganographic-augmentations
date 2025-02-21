@@ -11,7 +11,6 @@ from glob import glob
 from pathlib import Path
 
 def extract_run_data(event_file, target_metrics=None):
-    """Extract data from a single TensorBoard event file."""
     ea = event_accumulator.EventAccumulator(event_file)
     ea.Reload()
     
@@ -32,32 +31,26 @@ def extract_run_data(event_file, target_metrics=None):
     return run_data
 
 def process_experiment_group(group_path, output_dir, target_metrics=None):
-    """Process all versions within an experiment group (blur, color, etc.)"""
     group_name = os.path.basename(group_path)
     print(f"Processing {group_name}...")
     
-    # Create output directory for this group
     group_output_dir = os.path.join(output_dir, f"{group_name}_csv")
     os.makedirs(group_output_dir, exist_ok=True)
     
-    # Process each version directory
     version_dirs = sorted(glob(os.path.join(group_path, "version_*")))
     for version_dir in version_dirs:
-        version = os.path.basename(version_dir)  # Gets "version_X"
+        version = os.path.basename(version_dir)
         
-        # Find event file in this version
         event_files = []
         for root, _, files in os.walk(version_dir):
             for file in files:
                 if file.startswith("events.out.tfevents"):
                     event_files.append(os.path.join(root, file))
         
-        # Process the event file for this version
         for event_file in event_files:
             try:
                 run_data = extract_run_data(event_file, target_metrics)
                 
-                # Save each metric for this version to a separate file
                 for metric, df in run_data.items():
                     output_file = os.path.join(group_output_dir, f"{version}_{metric}.csv")
                     df.to_csv(output_file, index=False)
@@ -67,15 +60,6 @@ def process_experiment_group(group_path, output_dir, target_metrics=None):
                 print(f"Error processing {event_file}: {str(e)}")
 
 def export_all_groups(logdir, output_dir, target_metrics=None):
-    """
-    Export all experiment groups to organized CSV files.
-    
-    Args:
-        logdir (str): Path to tensorboard logs directory
-        output_dir (str): Path to output directory
-        target_metrics (list, optional): List of metric names to extract. 
-                                       If None, extracts all metrics.
-    """
     experiment_groups = [
         d for d in glob(os.path.join(logdir, "cifar10_*"))
         if os.path.isdir(d) and not d.endswith("_csv")
@@ -88,22 +72,19 @@ def export_all_groups(logdir, output_dir, target_metrics=None):
     for group in experiment_groups:
         process_experiment_group(group, output_dir, target_metrics)
 
-def generate_distinct_colors(n):
+def generate_distinct_colors(n, experiment_names):
     colors = []
-    for i in range(n):
-        hue = i / n
-        saturation = 0.7 + np.random.normal(0, 0.1)
-        saturation = np.clip(saturation, 0.6, 0.8)
-        value = 0.9 + np.random.normal(0, 0.1)
-        value = np.clip(value, 0.8, 1.0)
-        rgb = colorsys.hsv_to_rgb(hue, saturation, value)
-        colors.append(rgb)
-    return colors
-
-def adjust_colors_for_two(colors):
-    if len(colors) == 2:
-        colors[0] = (1.0, 0.0, 0.0)
-        colors[1] = (0.0, 0.0, 0.5)
+    for i, name in enumerate(experiment_names):
+        if 'steg' in name.lower():
+            colors.append((1.0, 0.0, 0.0))
+        else:
+            hue = i / n
+            saturation = 0.7 + np.random.normal(0, 0.1)
+            saturation = np.clip(saturation, 0.6, 0.8)
+            value = 0.9 + np.random.normal(0, 0.1)
+            value = np.clip(value, 0.8, 1.0)
+            rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+            colors.append(rgb)
     return colors
 
 def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=True):
@@ -121,7 +102,6 @@ def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=Tr
                 version_num = int(parts[version_idx])
                 
                 df = pd.read_csv(csv_file)
-                # Rename columns to match expected names
                 df.columns = ['step', 'value', 'wall_time']
                 version_dfs[version_num] = df
             except Exception as e:
@@ -135,10 +115,8 @@ def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=Tr
         print("No experiment data found.")
         return
 
-    colors = generate_distinct_colors(len(experiment_names))
-    colors = adjust_colors_for_two(colors)
+    colors = generate_distinct_colors(len(experiment_names), experiment_names)
 
-    # Create plot
     plt.figure(figsize=(12, 8))
     
     for color, (experiment_name, version_dfs) in zip(colors, all_experiments.items()):
@@ -160,17 +138,23 @@ def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=Tr
         std_values = np.nanstd(combined_values, axis=0)
         steps = np.arange(len(mean_values))
 
-        # Plot mean line
-        plt.plot(steps, mean_values, label=experiment_name.replace('_csv', ''), color=color)
+        linewidth = 2.5 if 'steg' in experiment_name.lower() else 2.0
+        zorder = 10 if 'steg' in experiment_name.lower() else 1
+
+        plt.plot(steps, mean_values, 
+                label=experiment_name.replace('_csv', ''), 
+                color=color,
+                linewidth=linewidth,
+                zorder=zorder)
         
-        # Plot standard deviation if requested
         if show_std:
             plt.fill_between(
                 steps, 
                 mean_values - std_values, 
                 mean_values + std_values, 
                 alpha=0.2, 
-                color=color
+                color=color,
+                zorder=zorder-1
             )
 
     plt.title("Validation Accuracy Across Experiments", weight="bold", fontsize=16)
@@ -182,7 +166,6 @@ def plot_experiment_metrics(experiment_names, base_path, output_dir, show_std=Tr
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
-    # Save plot
     output_path = Path(output_dir) / "combined_metrics.png"
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -199,12 +182,13 @@ def main():
     export_all_groups(TENSORBOARD_LOG_DIR, OUTPUT_DIR, METRICS_TO_EXTRACT)
 
     experiments = [
-        "cifar10_blur",
-        "cifar10_color", 
-        "cifar10_erase",
-        "cifar10_hlip",
         "cifar10_steg_hflips",
         "cifar10_steg",
+        "cifar10_color", 
+        "cifar10_erase",
+        "cifar10_none",
+        "cifar10_hflip",
+        "cifar10_blur",
     ]
     
     for i in range(len(experiments)):

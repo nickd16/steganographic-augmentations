@@ -75,30 +75,28 @@ def train(
     trainer.test(model, testloader)
 
 def main():
+
+    # transforms.ToTensor(),
+    # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)
+    # transforms.ToTensor(),
+    # transforms.GaussianBlur(kernel_size=3)
+    # transforms.RandomHorizontalFlip(p=0.5)
+    # transforms.RandomErasing(p=0.5) 
+
     lr = 2e-4
     num_classes=10
     dataset = 'cifar10'
     num_epochs = 50
     names = [
+        'cifar10_steg',
         'cifar10_steg_hflips'
     ]
     transformz = [
-        # transforms.Compose([
-        #     transforms.ToTensor(),
-        #     transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)
-        # ]),  
-        # transforms.Compose([
-        #     transforms.ToTensor(),
-        #     transforms.GaussianBlur(kernel_size=3)
-        # ]),
-        # transforms.Compose([
-        #     transforms.ToTensor(),
-        #     transforms.RandomHorizontalFlip(p=0.5)
-        # ]),  
-        # transforms.Compose([
-        #     transforms.ToTensor(),
-        #     transforms.RandomErasing(p=0.5)
-        # ]),  
+        transforms.Compose([
+            transforms.ToTensor(),
+        ]),  
+    ]
+    transformz = [
         transforms.Compose([
             transforms.ToTensor(),
             transforms.RandomHorizontalFlip(p=0.5)
