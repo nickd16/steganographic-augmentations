@@ -8,7 +8,7 @@ All results can be reproduced in train.py:
 ```bash
 pip3 install -r requirements.txt
 python3 train.py
-'''
+```
 
 A naive implementation of the steganographic embeddings can be found in steganography.py
 
@@ -34,7 +34,7 @@ class LSBEmbed:
     
     def __repr__(self):
         return f"{self.__class__.__name__}(num_bits={self.num_bits})"
-'''
+```
 
 
 ![colors](https://github.com/user-attachments/assets/d5d730d7-a3a3-4682-898e-de1406904cb7)
